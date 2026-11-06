@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Acme Tools</title>
+<meta name="description" content="A tiny fixture page.">
+<style>
+  :root{--bg:#111418;--card:#1b1f26;--line:#2a303b;--fg:#eef1f6;--dim:#8d95a6;--acc:#4f8cff}
+  @media (prefers-color-scheme: light){:root{--bg:#f6f7f9;--card:#fff;--line:#e4e7ed;--fg:#15181e;--dim:#6b7385;--acc:#2f6df0}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:20px}
+  h1{font-size:22px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap}
+  input{flex:1 1 200px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--card)}
+  .chip{border-radius:999px;padding:6px 12px;background:rgba(127,127,127,.12);cursor:pointer;transition:background .15s}
+  .chip:hover{background:var(--acc);color:#fff}
+  .grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .card{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card)}
+  footer{font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+<h1>Acme Tools</h1>
+<div class="bar">
+  <input id="q" placeholder="search tools" aria-label="search">
+  <button class="chip" data-group="all">All</button>
+  <button class="chip" data-group="work">Work</button>
+</div>
+<main class="grid" id="list">
+  <a class="card" href="./a/" data-group="work"><strong>Alpha</strong><small>notes &amp; docs</small></a>
+  <a class="card" href="./b/" data-group="work"><strong>Beta</strong><small>tables</small></a>
+  <a class="card" href="./c/" data-group="play"><strong>Gamma</strong><small>puzzle game</small></a>
+</main>
+<footer><p>Fixture page for craft-lite. Not a real product.</p></footer>
+<script>
+  const q = document.getElementById('q');
+  const chips = Array.from(document.querySelectorAll('.chip'));
+  const cards = Array.from(document.querySelectorAll('.card'));
+  let group = 'all';
+  function draw(){
+    const k = q.value.trim().toLowerCase();
+    for (const c of cards){
+      const okGroup = group === 'all' || c.dataset.group === group;
+      const okKey = !k || c.textContent.toLowerCase().includes(k);
+      c.classList.toggle('hide', !(okGroup && okKey));
+    }
+  }
+  q.addEventListener('input', draw);
+  for (const chip of chips) chip.addEventListener('click', () => { group = chip.dataset.group; draw(); });
+</script>
+</body>
+</html>

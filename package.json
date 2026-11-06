@@ -1,0 +1,44 @@
+{
+  "name": "craft-lite",
+  "version": "0.1.0",
+  "description": "Clean-room rebuild loop in one small tool: study a web page into evidence, score your rebuild against it. No browser, no dependencies, runs anywhere Node does.",
+  "type": "module",
+  "bin": {
+    "craft-lite": "bin/craft-lite.mjs"
+  },
+  "main": "lib/extract.mjs",
+  "files": [
+    "bin/",
+    "lib/",
+    "test/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/selftest.mjs",
+    "start": "node bin/craft-lite.mjs"
+  },
+  "keywords": [
+    "clean-room",
+    "rebuild",
+    "reverse-engineering",
+    "design-tokens",
+    "similarity",
+    "cli",
+    "mcp",
+    "craft-anything"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Verchiel666/craft-lite.git"
+  },
+  "homepage": "https://github.com/Verchiel666/craft-lite#readme",
+  "bugs": {
+    "url": "https://github.com/Verchiel666/craft-lite/issues"
+  },
+  "author": "Verchiel666"
+}

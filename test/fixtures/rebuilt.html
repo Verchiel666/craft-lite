@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Acme Tools</title>
+<meta name="description" content="A clean-room rebuild of the fixture.">
+<style>
+  :root{--bg:#111418;--card:#1b1f26;--line:#2a303b;--fg:#eef1f6;--dim:#8d95a6;--acc:#4f8cff}
+  @media (prefers-color-scheme: light){:root{--bg:#f6f7f9;--card:#fff;--line:#e4e7ed;--fg:#15181e;--dim:#6b7385;--acc:#2f6df0}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif;padding:20px}
+  h1{font-size:22px}
+  .tools{display:flex;gap:8px;flex-wrap:wrap}
+  input{flex:1 1 200px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--card)}
+  button.pill{border-radius:999px;padding:6px 12px;background:rgba(127,127,127,.12);cursor:pointer;transition:background .15s}
+  button.pill:hover{background:var(--acc);color:#fff}
+  main{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  a.tile{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--card);text-decoration:none;color:inherit}
+  footer{font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+<h1>Acme Tools</h1>
+<div class="tools">
+  <input id="q" placeholder="find a tool" aria-label="find a tool">
+  <button class="pill" data-team="all">All</button>
+  <button class="pill" data-team="work">Work</button>
+</div>
+<main id="panel">
+  <a class="tile" href="./a/" data-team="work"><strong>Alpha</strong><small>writing</small></a>
+  <a class="tile" href="./b/" data-team="work"><strong>Beta</strong><small>grids</small></a>
+  <a class="tile" href="./c/" data-team="play"><strong>Gamma</strong><small>puzzle</small></a>
+</main>
+<footer><p>Rebuilt from measured evidence for the craft-lite self-test.</p></footer>
+<script>
+  const field = document.getElementById('q');
+  const pills = Array.from(document.querySelectorAll('.pill'));
+  const tiles = Array.from(document.querySelectorAll('.tile'));
+  let team = 'all';
+  function render(){
+    const term = field.value.trim().toLowerCase();
+    for (const t of tiles){
+      const okTeam = team === 'all' || t.dataset.team === team;
+      const okTerm = !term || t.textContent.toLowerCase().includes(term);
+      t.classList.toggle('hide', !(okTeam && okTerm));
+    }
+  }
+  field.addEventListener('input', render);
+  for (const pill of pills) pill.addEventListener('click', () => { team = pill.dataset.team; render(); });
+</script>
+</body>
+</html>
