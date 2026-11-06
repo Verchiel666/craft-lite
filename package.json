@@ -1,7 +1,7 @@
 {
   "name": "craft-lite",
-  "version": "0.1.0",
-  "description": "Clean-room rebuild loop in one small tool: study a web page into evidence, score your rebuild against it. No browser, no dependencies, runs anywhere Node does.",
+  "version": "0.2.0",
+  "description": "Clean-room rebuild loop in one small tool: study a page (including its external stylesheets) into evidence, score your rebuild against it. No browser, no dependencies.",
   "type": "module",
   "bin": {
     "craft-lite": "bin/craft-lite.mjs"

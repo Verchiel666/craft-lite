@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Linked Stylesheet Fixture</title>
+<link rel="stylesheet" href="linked.css">
+</head>
+<body>
+<h1>Linked Fixture</h1>
+<div class="bar"><input id="q" aria-label="search"><button class="chip">All</button></div>
+<main class="grid">
+  <a class="card" href="#a"><strong>Alpha</strong></a>
+  <a class="card" href="#b"><strong>Beta</strong></a>
+</main>
+<script>document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => c.classList.toggle('on')));</script>
+</body>
+</html>

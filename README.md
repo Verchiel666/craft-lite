@@ -38,6 +38,18 @@ npm i -g craft-lite          # 或 npx craft-lite <command>
 
 选项：`--json`（机器可读）、`--min <分数>`（低于就 exit 1，可接 CI）、`--port/--host`、`--quiet`。
 
+### 外部样式表
+
+真实站点的令牌大多在独立的 `.css` 里，不在 `<style>` 里。所以 `study` / `check` 会顺着
+`<link rel="stylesheet">` 把样式表抓下来（**本地文件读相对路径，URL 走 HTTP**），再跟一层 `@import`，
+上限 8 个文件 / 1 MB。抓失败不致命：报告里记 `ok: false` 和原因，其余证据照常产出。
+
+```sh
+npx craft-lite study https://tailwind-site.example/ projects/tw
+#   capture/summary.md 的 "## Stylesheets" 一节写清楚读了哪几个文件、各多少字节
+```
+
+
 ```sh
 # CI 里当回归闸：复刻掉到 90 分以下就红
 craft-lite check projects/p projects/p/app/index.html --min 90
@@ -81,11 +93,21 @@ projects/example/
 
 剩下的 5.7 分全在 `copy`：成品用了自写文案。
 
+## 自测
+
+```sh
+node test/selftest.mjs     # 45 项断言，全部离线（fixtures 自带，不联网）
+```
+
+覆盖：抽取（令牌／颜色／骨架／行为／文案指纹）、打分（满分、降级、缺颜色／缺令牌／缺标题都必须被点名）、
+study→check 端到端、外部样式表（本地与 HTTP、`@import`、抓失败不致命）、`--min` 闸门、静态服务与 404。
+CI 在 node 18/20/22 上跑同一套。
+
 ## 局限（先说清楚）
 
 - **只做静态证据**：不执行 JS，SPA 只能拿到首屏 HTML；运行时才出现的 DOM、canvas、三种屏宽的截图它都没有。
   要看真实渲染，用真浏览器或 craft-anything 的桌面版。
-- **不解析外部 CSS 文件的内容**，只记录引用了几个；内联 `<style>` 才是它读得到的。
+- 外部样式表只跟一层 `@import`，最多 8 个文件 / 1 MB；JS 动态注入的样式看不到。
 - 正则抽取，不是完整 CSS/DOM 解析器：极端写法（嵌套 `@layer`、`@container`）可能抽不全。
 - 打分是**相似度**，不是「对不对」。分数高不等于好用，只是「量出来的东西对上了」。
 
@@ -95,6 +117,11 @@ projects/example/
 - 复刻重建的是**布局、样式、行为**；logo、照片、文案不要去抄。
 - 不绕过 DRM、登录、反爬、反作弊。
 - 工具是中性的，红线在使用者。
+
+## 一个真实的例子
+
+[demo 页](https://verchiel666.github.io/craft-lite/) 是上面那次 94.3 分的报告，页面样式放在独立的
+`docs/demo.css` 里——正好是「外部样式表」这条能力的一次真实用例。
 
 ## License
 

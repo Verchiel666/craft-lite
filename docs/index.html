@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>craft-lite · 一次真实的净室复刻打分</title>
+<meta name="description" content="craft-lite 在一个真实静态站上的净室复刻：7 个维度、94.3 分，以及还差在哪。">
+<!-- 这个页面本身就是外部样式表：demo.css 单独一个文件，正好用来验证 craft-lite 读不读得到外部 CSS -->
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>一次真实的净室复刻：94.3 / 100</h1>
+  <p class="lede">目标是一个 5 KB 的静态站（自己名下，净室合规）。只读量出来的令牌重写，不复制原 CSS、不抄原文。</p>
+
+  <div class="score">
+    <strong>94.3</strong>
+    <span>7 个维度加权 · 6 项满分 · 唯一没满分的是「文案指纹」（预期内）</span>
+  </div>
+
+  <h2>逐项打分</h2>
+  <table>
+    <thead><tr><th>维度</th><th class="num">权重</th><th>得分率</th><th class="num">得分</th></tr></thead>
+    <tbody>
+      <tr><td>palette 调色板</td><td class="num">20</td><td><span class="bar" style="width:100%"></span><span class="full">100%</span></td><td class="num">20.0</td></tr>
+      <tr><td>tokens 设计令牌</td><td class="num">15</td><td><span class="bar" style="width:100%"></span><span class="full">100%</span></td><td class="num">15.0</td></tr>
+      <tr><td>headings 标题层级</td><td class="num">15</td><td><span class="bar" style="width:100%"></span><span class="full">100%</span></td><td class="num">15.0</td></tr>
+      <tr><td>structure 结构骨架</td><td class="num">15</td><td><span class="bar" style="width:100%"></span><span class="full">100%</span></td><td class="num">15.0</td></tr>
+      <tr><td>behaviour 行为特征</td><td class="num">20</td><td><span class="bar" style="width:100%"></span><span class="full">100%</span></td><td class="num">20.0</td></tr>
+      <tr><td>copy 文案指纹</td><td class="num">10</td><td><span class="bar" style="width:45%"></span><span class="muted">45%</span></td><td class="num">4.5</td></tr>
+      <tr><td>size 体积接近</td><td class="num">5</td><td><span class="bar" style="width:97%"></span><span class="muted">97%</span></td><td class="num">4.8</td></tr>
+    </tbody>
+  </table>
+
+  <h2>它认出来的设计令牌</h2>
+  <table>
+    <thead><tr><th>令牌</th><th>深色</th><th>浅色</th></tr></thead>
+    <tbody>
+      <tr><td><code>--bg</code></td><td><code>#0f1115</code></td><td><code>#f5f6f8</code></td></tr>
+      <tr><td><code>--card</code></td><td><code>#171a21</code></td><td><code>#fff</code></td></tr>
+      <tr><td><code>--line</code></td><td><code>#262b36</code></td><td><code>#e3e6ec</code></td></tr>
+      <tr><td><code>--fg</code></td><td><code>#e8ebf2</code></td><td><code>#14171d</code></td></tr>
+      <tr><td><code>--dim</code></td><td><code>#8b93a7</code></td><td><code>#666e80</code></td></tr>
+      <tr><td><code>--acc</code></td><td><code>#4c8dff</code></td><td><code>#2563eb</code></td></tr>
+    </tbody>
+  </table>
+  <p class="muted">主题变量在 <code>:root</code> 与 <code>@media (prefers-color-scheme:light)</code> 里各声明一次，craft-lite 会把「取过的所有值」都记住，而不是只看最后一个。</p>
+
+  <h2>它还差在哪</h2>
+  <pre><code>- copy: 成品用了自写文案（45%），没有搬原文
+
+# 这是净室复刻要的代价，不是缺陷。
+# 反过来：copy 接近 100% 通常意味着直接把原文搬过来了。</code></pre>
+
+  <h2>三行命令复现</h2>
+  <pre><code>npx -y craft-lite study https://your.site/ projects/example
+#   … 照 capture/summary.md 的令牌写复刻 …
+npx -y craft-lite check projects/example projects/example/app/index.html --min 90</code></pre>
+
+  <footer>
+    <p><a href="https://github.com/Verchiel666/craft-lite">github.com/Verchiel666/craft-lite</a> · MIT ·
+    这个页面的样式在独立的 <a href="demo.css">demo.css</a> 里，正好是「外部样式表」这条能力的一次真实用例。</p>
+  </footer>
+</div>
+</body>
+</html>

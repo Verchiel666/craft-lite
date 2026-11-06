@@ -9,6 +9,7 @@ import { score } from '../lib/score.mjs';
 import { study } from '../lib/study.mjs';
 import { check } from '../lib/check.mjs';
 import { serve } from '../lib/serve.mjs';
+import { collectCss } from '../lib/assets.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -93,6 +94,51 @@ try {
   await rm(dir, { recursive: true, force: true });
 }
 
+console.log('\nexternal stylesheets (local file)');
+let cssDir;
+try {
+  cssDir = await mkdtemp(join(tmpdir(), 'craft-lite-css-'));
+} catch {
+  cssDir = await mkdtemp(join(root, '.test-'));
+}
+try {
+  const project = join(cssDir, 'project');
+  await mkdir(project, { recursive: true });
+  await study(join(fixtures, 'linked.html'), project, { log: () => {} });
+  const linked = JSON.parse(await readFile(join(project, 'capture/report.json'), 'utf8'));
+  ok('linked css read', linked.style.vars['--acc'] === '#3b82f6', JSON.stringify(linked.style.vars));
+  ok('@import followed one level', linked.style.colors.includes('rgba(0,0,0,.06)'), linked.style.colors.join(','));
+  ok('two stylesheets recorded', linked.stylesheets.length === 2, JSON.stringify(linked.stylesheets.map((x) => x.href)));
+  ok('behaviour comes from external css', linked.features.grid && linked.features.flex && linked.features.hoverRules && linked.features.transitions, JSON.stringify(linked.features));
+  ok('themed token from external css', (linked.style.varVariants['--bg'] || []).length === 2, JSON.stringify(linked.style.varVariants['--bg']));
+  ok('css bytes counted', linked.bytes.css > 300, String(linked.bytes.css));
+
+  const broken = join(cssDir, 'broken.html');
+  await (await import('node:fs/promises')).writeFile(broken, '<html><head><link rel="stylesheet" href="nope.css"></head><body><h1>Broken</h1></body></html>');
+  const brokenProject = join(cssDir, 'broken');
+  await mkdir(brokenProject, { recursive: true });
+  await study(broken, brokenProject, { log: () => {} });
+  const brokenReport = JSON.parse(await readFile(join(brokenProject, 'capture/report.json'), 'utf8'));
+  ok('missing stylesheet is reported, not fatal', brokenReport.stylesheets.length === 1 && brokenReport.stylesheets[0].ok === false, JSON.stringify(brokenReport.stylesheets));
+
+  // a rebuild that keeps its tokens in an external file must score the same as one that inlines them
+  const spread = join(cssDir, 'spread');
+  await mkdir(spread, { recursive: true });
+  await (await import('node:fs/promises')).writeFile(join(spread, 'theme.css'), originalHtml.match(/<style>([\s\S]*?)<\/style>/)[1]);
+  const externalRebuild = rebuiltHtml.replace(/<style>[\s\S]*?<\/style>/, '<link rel="stylesheet" href="theme.css">');
+  const spreadFile = join(spread, 'index.html');
+  await (await import('node:fs/promises')).writeFile(spreadFile, externalRebuild);
+  const project2 = join(cssDir, 'project2');
+  await mkdir(project2, { recursive: true });
+  await study(join(fixtures, 'original.html'), project2, { log: () => {} });
+  const spreadResult = await check(project2, spreadFile, { log: () => {} });
+  const spreadDim = (key) => spreadResult.dims.find((d) => d.key === key).value;
+  ok('rebuild tokens read from its own css file', spreadDim('tokens') === 1 && spreadDim('palette') === 1 && spreadDim('behaviour') === 1, JSON.stringify({ tokens: spreadDim('tokens'), palette: spreadDim('palette'), behaviour: spreadDim('behaviour') }));
+  ok('score stays within a point', Math.abs(spreadResult.score - good.score) <= 1, `${spreadResult.score} vs ${good.score}`);
+} finally {
+  await rm(cssDir, { recursive: true, force: true });
+}
+
 console.log('\ncli');
 const cli = join(root, 'bin/craft-lite.mjs');
 const version = spawnSync(process.execPath, [cli, 'version'], { encoding: 'utf8' });
@@ -129,6 +175,10 @@ try {
   ok('serves html', res.status === 200 && res.headers.get('content-type').includes('text/html'), String(res.status));
   const miss = await fetch(url + 'nope.html');
   ok('404 for missing', miss.status === 404, String(miss.status));
+
+  const remote = await collectCss('<link rel="stylesheet" href="linked.css">', url);
+  ok('linked css fetched over http', remote.fetched.length === 2 && remote.fetched.every((f) => f.ok), JSON.stringify(remote.fetched.map((f) => f.href)));
+  ok('fetched css has the tokens', remote.css.includes('--acc:#3b82f6'), String(remote.bytes));
 } finally {
   server.close();
 }

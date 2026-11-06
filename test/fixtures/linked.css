@@ -1,0 +1,8 @@
+@import "imported.css";
+:root{--bg:#101418;--fg:#eef1f7;--acc:#3b82f6;--line:#25303c}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.bar{display:flex;gap:8px}
+.card{border:1px solid var(--line);border-radius:12px;transition:transform .2s}
+.card:hover{transform:translateY(-1px)}
+@media (prefers-color-scheme: light){:root{--bg:#ffffff}}
