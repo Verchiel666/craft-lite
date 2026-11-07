@@ -1,7 +1,7 @@
 {
   "name": "craft-lite",
-  "version": "0.2.0",
-  "description": "Clean-room rebuild loop in one small tool: study a page (including its external stylesheets) into evidence, score your rebuild against it. No browser, no dependencies.",
+  "version": "0.3.0",
+  "description": "Clean-room rebuild loop in one small tool: study a page (including its external stylesheets) into evidence, score your rebuild against it, and audit the exam itself. No browser, no dependencies.",
   "type": "module",
   "bin": {
     "craft-lite": "bin/craft-lite.mjs"
@@ -29,7 +29,10 @@
     "similarity",
     "cli",
     "mcp",
-    "craft-anything"
+    "craft-anything",
+    "audit",
+    "reward-hacking",
+    "eval-audit"
   ],
   "license": "MIT",
   "repository": {

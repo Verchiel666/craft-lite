@@ -10,6 +10,7 @@ import { study } from '../lib/study.mjs';
 import { check } from '../lib/check.mjs';
 import { serve } from '../lib/serve.mjs';
 import { collectCss } from '../lib/assets.mjs';
+import { shellPage, checkShell, checkCopyIncentive, checkVerbatim, checkPlateau, examFingerprint, auditProject } from '../lib/audit.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -139,6 +140,41 @@ try {
   await rm(cssDir, { recursive: true, force: true });
 }
 
+
+console.log('\naudit: shell baseline');
+const shell = shellPage(original);
+const shellReport = extract(shell);
+const shellScore = score(original, shellReport);
+ok('shell page reproduces every token', JSON.stringify(shellReport.style.vars) === JSON.stringify(original.style.vars), JSON.stringify(shellReport.style.vars));
+ok('shell page reproduces the palette', shellReport.style.colors.length === original.style.colors.length, String(shellReport.style.colors.length));
+ok('shell page reproduces the tag histogram', JSON.stringify(shellReport.tags) === JSON.stringify(original.tags), JSON.stringify(shellReport.tags));
+ok('shell page lights every behaviour flag', Object.keys(original.features).every((k) => original.features[k] !== true || shellReport.features[k] === true));
+ok('shell page has almost no prose', shellReport.text.fingerprint.words.length <= 3, JSON.stringify(shellReport.text.fingerprint.words));
+ok('shell page still scores high on the exam', shellScore.score >= 85, String(shellScore.score));
+const shellProbe = checkShell(original);
+ok('A1 fires on a gameable exam', shellProbe.fired && shellProbe.score >= 85, String(shellProbe.score));
+ok('A1 passes on an exam it cannot game', !checkShell(original, { threshold: 0.99 }).fired);
+
+console.log('\naudit: copy incentive');
+const pay = checkCopyIncentive(original, rebuiltHtml);
+ok('A2 measures both sides', pay.clean > 0 && pay.plagiarised > 0, `${pay.clean} vs ${pay.plagiarised}`);
+ok('A2 copy dimension rises when prose is lifted', pay.copyPlagiarised > pay.copyClean, `${pay.copyClean} -> ${pay.copyPlagiarised}`);
+
+console.log('\naudit: verbatim');
+const sameFile = checkVerbatim(originalHtml, originalHtml);
+ok('A3 catches a verbatim copy', sameFile.fired && sameFile.prose === 1 && sameFile.code === 1, JSON.stringify({ prose: sameFile.prose, code: sameFile.code }));
+const honest = checkVerbatim(originalHtml, rebuiltHtml);
+ok('A3 clears a faithful rebuild', !honest.fired, JSON.stringify({ prose: honest.prose, code: honest.code }));
+const shellVerbatim = checkVerbatim(originalHtml, shell);
+ok('A3 clears a from-scratch shell', !shellVerbatim.fired, JSON.stringify({ prose: shellVerbatim.prose, code: shellVerbatim.code }));
+
+console.log('\naudit: fingerprint');
+const fp1 = examFingerprint(original);
+ok('fingerprint is stable', fp1 === examFingerprint(original) && fp1.length === 12, fp1);
+const poked = JSON.parse(JSON.stringify(original));
+poked.style.colors = [...poked.style.colors, '#123456'];
+ok('fingerprint changes when the exam evidence changes', examFingerprint(poked) !== fp1);
+
 console.log('\ncli');
 const cli = join(root, 'bin/craft-lite.mjs');
 const version = spawnSync(process.execPath, [cli, 'version'], { encoding: 'utf8' });
@@ -164,6 +200,29 @@ try {
   await (await import('node:fs/promises')).writeFile(weak, '<html><body><h1>Acme Tools</h1></body></html>');
   const gateFail = spawnSync(process.execPath, [cli, 'check', project, weak, '--min', '90', '--quiet'], { encoding: 'utf8' });
   ok('--min fails a weak rebuild', gateFail.status === 1, `exit ${gateFail.status}`);
+
+  console.log('\naudit: plateau and project wiring');
+  const plateauDir = join(project, 'checks');
+  const flat = await checkPlateau(plateauDir, { window: 2 });
+  ok('A4 does not fire without history', !flat.fired, flat.evidence);
+
+  const a1 = await auditProject(project, join(fixtures, 'rebuilt.html'));
+  ok('project audit runs end to end', typeof a1.ok === 'boolean' && a1.rows.length === 5, String(a1.rows.length));
+  ok('project audit pins an exam fingerprint', a1.rows.find((r) => r.rule.includes('A5')).fingerprint === examFingerprint(JSON.parse(await readFile(join(project, 'capture/report.json'), 'utf8'))));
+  const a2 = await auditProject(project, join(fixtures, 'rebuilt.html'));
+  ok('A5 stays quiet on an unchanged exam', !a2.rows.find((r) => r.rule.includes('A5')).fired, a2.rows.find((r) => r.rule.includes('A5')).evidence);
+
+  const copyFile = join(project, 'copy.html');
+  await (await import('node:fs/promises')).writeFile(copyFile, originalHtml);
+  const copyAudit = await auditProject(project, copyFile);
+  ok('project audit flags a copied source', copyAudit.rows.find((r) => r.rule.includes('A3')).fired);
+
+  const auditCmd = spawnSync(process.execPath, [cli, 'audit', project, join(fixtures, 'rebuilt.html')], { encoding: 'utf8' });
+  ok('audit command exits 1 when a probe fires', auditCmd.status === 1, `exit ${auditCmd.status}`);
+  ok('audit command renders a table', auditCmd.stdout.includes('空壳基线') && auditCmd.stdout.includes('逐字抄袭'), auditCmd.stdout.slice(0, 60));
+
+  const checkAudit = spawnSync(process.execPath, [cli, 'check', project, join(fixtures, 'rebuilt.html'), '--audit', '--quiet'], { encoding: 'utf8' });
+  ok('check --audit also gates on the exam', checkAudit.status === 1, `exit ${checkAudit.status}`);
 } finally {
   await rm(gateDir, { recursive: true, force: true });
 }

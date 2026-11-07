@@ -33,10 +33,11 @@ npm i -g craft-lite          # 或 npx craft-lite <command>
 |---|---|
 | `craft-lite study <url\|file> <projectDir>` | 抓目标 → 写 `capture/{raw.html,report.json,summary.md}` + `craft.json` |
 | `craft-lite check <projectDir> <built.html>` | 与 `capture/` 比对 → 打分 + `checks/<时间戳>.{json,md}` |
+| `craft-lite audit <projectDir> <built.html>` | **审考卷**：5 条探针，任何一条报警就 exit 1 |
 | `craft-lite serve <dir> [port]` | 本地托管（`.wasm` 回 `application/wasm`，浏览器才肯流式编译） |
 | `craft-lite help \| version` | |
 
-选项：`--json`（机器可读）、`--min <分数>`（低于就 exit 1，可接 CI）、`--port/--host`、`--quiet`。
+选项：`--json`（机器可读）、`--min <分数>`（低于就 exit 1，可接 CI）、`--audit`（check 时顺便审考卷）、`--port/--host`、`--quiet`。
 
 ### 外部样式表
 
@@ -72,6 +73,35 @@ craft-lite check projects/p projects/p/app/index.html --min 90
 > **文案指纹低不是 bug。** 净室复刻的成品本就该用自己的话写文案，这一项掉到 40–50% 是预期内的代价。
 > 反过来，如果 `copy` 接近 100%，大概率是直接把原文搬过来了——那不是复刻，是抄。
 
+## 先审考卷，再看分数（audit）
+
+分数 = 成品 × 考卷。这 7 个维度全是**表面相似度**，没有一条在问「这页真的能用吗」「是不是把源码抄过来了」。
+所以 `audit` 会先往考卷里植入 5 类已知故障，看它抓不抓得住：
+
+| 探针 | 植入什么 | 合格标准 |
+|---|---|---|
+| **A1 空壳基线** | 只用 study 报告拼一个页面：令牌、颜色、标题、标签直方图、所有行为 flag、字节数全对上，但**零真实内容、零可用交互** | 得分 < 70。分越高，说明你「什么都不做」也能拿到的分越多 |
+| **A2 抄文案有奖励** | 同一个成品，把原作的文案塞回去 | 分数不应上升。上升说明考卷在**奖励它本该禁止的行为** |
+| **A3 逐字抄袭** | 把原件 HTML 直接当成品交上去 | 文案／脚本的 6-gram 逐字重合率必须低于 50% |
+| **A4 该刹车** | 最近 4 次 check 的分数 | 净变化 ≥ 0.5。不动就是你已经在刷分了，别再加提示词 |
+| **A5 考卷归因** | 重跑一次 study，或改了维度权重 | 指纹不变，历史分数才可比 |
+
+```sh
+# 单独审考卷
+craft-lite audit projects/p projects/p/app/index.html
+
+# 一次跑完，任何一条报警就红（推荐直接放进 CI）
+craft-lite check projects/p projects/p/app/index.html --min 90 --audit --quiet
+```
+
+每份 `check` 都会把考卷指纹（`exam`）写进 `checks/*.json`，所以「这 93 分是跟哪张考卷比出来的」永远可追。
+
+> **A1 是这套工具最该被记住的一个数。** 在自带 fixtures 上，一个只用 study 报告拼出来的空壳页
+> （没有一句正文、没有一行能跑的交互）现在拿 **91.1 / 100**。也就是说 7 个维度里，有 90 分是
+> 「照着量出来的值填一遍」就能拿到的，只有 `copy` 那 10 分真正需要你有内容。
+> 这不是 craft-lite 的 bug，是所有表面相似度指标的通病——知道这个数，才知道该怎么读那个分。
+
+
 ## 项目目录（和 craft-anything 同一套约定）
 
 ```
@@ -96,11 +126,11 @@ projects/example/
 ## 自测
 
 ```sh
-node test/selftest.mjs     # 45 项断言，全部离线（fixtures 自带，不联网）
+node test/selftest.mjs     # 68 项断言，全部离线（fixtures 自带，不联网）
 ```
 
 覆盖：抽取（令牌／颜色／骨架／行为／文案指纹）、打分（满分、降级、缺颜色／缺令牌／缺标题都必须被点名）、
-study→check 端到端、外部样式表（本地与 HTTP、`@import`、抓失败不致命）、`--min` 闸门、静态服务与 404。
+study→check 端到端、外部样式表（本地与 HTTP、`@import`、抓失败不致命）、`--min` 闸门、静态服务与 404，以及审计的 5 条探针（空壳页必须真的复现全部令牌／调色板／直方图／行为 flag、逐字复制必须被抓、合格重写件与空壳页必须被放行、指纹变了必须报警、`--audit` 闸门）。
 CI 在 node 18/20/22 上跑同一套。
 
 ## 局限（先说清楚）
@@ -110,6 +140,7 @@ CI 在 node 18/20/22 上跑同一套。
 - 外部样式表只跟一层 `@import`，最多 8 个文件 / 1 MB；JS 动态注入的样式看不到。
 - 正则抽取，不是完整 CSS/DOM 解析器：极端写法（嵌套 `@layer`、`@container`）可能抽不全。
 - 打分是**相似度**，不是「对不对」。分数高不等于好用，只是「量出来的东西对上了」。
+  `audit` 能量出这个缺口有多大（A1 = 什么都不做能拿到的分），但它不替你补——要判断「真的能用」，仍然只有一条路：把成品在真浏览器里跑起来，真的点一遍。
 
 ## 负责任地使用
 
